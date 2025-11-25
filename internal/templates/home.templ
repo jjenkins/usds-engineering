@@ -1,0 +1,126 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/jjenkins/usds/internal/templates/layouts"
+)
+
+type HomeMetrics struct {
+	TotalTitles   int
+	TotalWords    int
+	AverageDensity float64
+	TotalAgencies int
+	HasData       bool
+}
+
+templ Home(metrics HomeMetrics) {
+	@layouts.Base("Home") {
+		<div class="space-y-8">
+			<!-- Page Header -->
+			<div>
+				<h1 class="text-2xl font-semibold text-aswad">Dashboard</h1>
+				<p class="mt-1 text-sm text-rainy">Federal regulation analysis overview</p>
+			</div>
+
+			<!-- Metrics Grid -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+				<div class="card p-5">
+					<div class="metric-label">Total Titles</div>
+					if metrics.HasData {
+						<div class="metric-value mt-2">{ fmt.Sprintf("%d", metrics.TotalTitles) }</div>
+					} else {
+						<div class="metric-value mt-2 text-silver">--</div>
+					}
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Total Words</div>
+					if metrics.HasData {
+						<div class="metric-value mt-2">{ formatNumber(metrics.TotalWords) }</div>
+					} else {
+						<div class="metric-value mt-2 text-silver">--</div>
+					}
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Avg Density</div>
+					if metrics.HasData {
+						<div class="metric-value mt-2">{ fmt.Sprintf("%.1f", metrics.AverageDensity) }</div>
+					} else {
+						<div class="metric-value mt-2 text-silver">--</div>
+					}
+					<div class="text-xs text-rainy mt-1">words per section</div>
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Total Agencies</div>
+					if metrics.HasData {
+						<div class="metric-value mt-2">{ fmt.Sprintf("%d", metrics.TotalAgencies) }</div>
+					} else {
+						<div class="metric-value mt-2 text-silver">--</div>
+					}
+				</div>
+			</div>
+
+			<!-- Quick Actions -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">Quick actions</h2>
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+					<a href="/titles" class="flex items-center gap-3 p-4 border border-plaster rounded-lg hover:border-silver hover:bg-brilliance transition-all">
+						<div class="w-10 h-10 bg-plaster rounded-lg flex items-center justify-center">
+							<svg class="w-5 h-5 text-private" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+							</svg>
+						</div>
+						<div>
+							<div class="text-sm font-medium text-aswad">View All Titles</div>
+							<div class="text-xs text-rainy">Browse all 50 CFR titles</div>
+						</div>
+					</a>
+					<a href="/agencies" class="flex items-center gap-3 p-4 border border-plaster rounded-lg hover:border-silver hover:bg-brilliance transition-all">
+						<div class="w-10 h-10 bg-plaster rounded-lg flex items-center justify-center">
+							<svg class="w-5 h-5 text-private" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+							</svg>
+						</div>
+						<div>
+							<div class="text-sm font-medium text-aswad">View By Agency</div>
+							<div class="text-xs text-rainy">Analyze by agency</div>
+						</div>
+					</a>
+					<a href="/history" class="flex items-center gap-3 p-4 border border-plaster rounded-lg hover:border-silver hover:bg-brilliance transition-all">
+						<div class="w-10 h-10 bg-plaster rounded-lg flex items-center justify-center">
+							<svg class="w-5 h-5 text-private" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+						</div>
+						<div>
+							<div class="text-sm font-medium text-aswad">Historical Changes</div>
+							<div class="text-xs text-rainy">Track changes over time</div>
+						</div>
+					</a>
+				</div>
+			</div>
+
+			<!-- Status Banner -->
+			if !metrics.HasData {
+				<div class="flex items-center gap-3 p-4 bg-plaster rounded-lg">
+					<svg class="h-5 w-5 text-rainy flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+					<span class="text-sm text-private">No data imported yet. Run <code class="bg-white px-2 py-0.5 rounded text-xs font-mono border border-silver">./usds import</code> to fetch eCFR data.</span>
+				</div>
+			}
+		</div>
+	}
+}
+
+func formatNumber(n int) string {
+	if n >= 1000000000 {
+		return fmt.Sprintf("%.1fB", float64(n)/1000000000)
+	}
+	if n >= 1000000 {
+		return fmt.Sprintf("%.1fM", float64(n)/1000000)
+	}
+	if n >= 1000 {
+		return fmt.Sprintf("%.1fK", float64(n)/1000)
+	}
+	return fmt.Sprintf("%d", n)
+}

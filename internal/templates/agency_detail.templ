@@ -1,0 +1,179 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/jjenkins/usds/internal/model"
+	"github.com/jjenkins/usds/internal/templates/layouts"
+)
+
+templ AgencyDetail(agency *model.Agency, parent *model.Agency, children []model.Agency, titles []model.Title, snapshots []model.AgencySnapshot, densityScore float64) {
+	@layouts.Base(agency.AgencyName) {
+		<div class="space-y-6">
+			<!-- Breadcrumb -->
+			<nav class="text-sm">
+				<a href="/agencies" class="text-rainy hover:text-private">Agencies</a>
+				if parent != nil {
+					<span class="text-silver mx-2">/</span>
+					<a href={ templ.SafeURL(fmt.Sprintf("/agencies/%s", parent.Slug)) } class="text-rainy hover:text-private">{ parent.AgencyName }</a>
+				}
+				<span class="text-silver mx-2">/</span>
+				<span class="text-private">{ agency.AgencyName }</span>
+			</nav>
+
+			<!-- Agency Header -->
+			<div class="card p-6">
+				<div class="flex items-start gap-4">
+					<div class="badge text-lg w-12 h-12">{ string(agency.AgencyName[0]) }</div>
+					<div>
+						<h1 class="text-xl font-semibold text-aswad">{ agency.AgencyName }</h1>
+						if agency.ShortName.Valid && agency.ShortName.String != "" {
+							<p class="text-base text-rainy">({ agency.ShortName.String })</p>
+						}
+						if parent != nil {
+							<p class="mt-1 text-sm text-rainy">
+								Part of <a href={ templ.SafeURL(fmt.Sprintf("/agencies/%s", parent.Slug)) } class="text-private hover:text-aswad">{ parent.AgencyName }</a>
+							</p>
+						}
+					</div>
+				</div>
+			</div>
+
+			<!-- Metrics Grid -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+				<div class="card p-5">
+					<div class="metric-label">Total Word Count</div>
+					<div class="metric-value mt-2">{ formatNumber(agency.TotalWordCount) }</div>
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Regulation Count</div>
+					<div class="metric-value mt-2">{ fmt.Sprintf("%d", agency.RegulationCount) }</div>
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Density Score</div>
+					if agency.RegulationCount > 0 {
+						<div class="metric-value mt-2">{ fmt.Sprintf("%.2f", densityScore) }</div>
+						<div class="w-full h-2 bg-plaster rounded-full overflow-hidden mt-2">
+							<div class="h-full bg-private rounded-full" style={ fmt.Sprintf("width: %.0f%%", densityScore*100) }></div>
+						</div>
+						<div class="text-xs text-rainy mt-1">{ formatNumber(agency.TotalWordCount / agency.RegulationCount) } words/title</div>
+					} else {
+						<div class="metric-value mt-2 text-silver">--</div>
+					}
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Linked Titles</div>
+					<div class="metric-value mt-2">{ fmt.Sprintf("%d", len(titles)) }</div>
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Child Agencies</div>
+					<div class="metric-value mt-2">{ fmt.Sprintf("%d", len(children)) }</div>
+				</div>
+			</div>
+
+			<!-- Linked Titles -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">Linked CFR Titles</h2>
+				if len(titles) > 0 {
+					<div class="overflow-x-auto">
+						<table class="min-w-full">
+							<thead>
+								<tr class="border-b border-plaster">
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Title</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Name</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Word Count</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Actions</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-plaster">
+								for _, title := range titles {
+									<tr class="row-hover">
+										<td class="px-4 py-3 whitespace-nowrap">
+											<div class="badge">{ fmt.Sprintf("%d", title.TitleNumber) }</div>
+										</td>
+										<td class="px-4 py-3 text-sm text-private">
+											{ title.TitleName }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-private">
+											{ formatNumber(title.WordCount) }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap">
+											<a href={ templ.SafeURL(fmt.Sprintf("/titles/%d", title.TitleNumber)) } class="text-sm text-rainy hover:text-private">
+												View Title
+											</a>
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				} else {
+					<p class="text-sm text-rainy">No CFR titles linked to this agency.</p>
+				}
+			</div>
+
+			<!-- Child Agencies -->
+			if len(children) > 0 {
+				<div class="card p-6">
+					<h2 class="text-base font-semibold text-aswad mb-4">Child Agencies</h2>
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+						for _, child := range children {
+							<a href={ templ.SafeURL(fmt.Sprintf("/agencies/%s", child.Slug)) } class="flex items-center gap-3 p-3 border border-plaster rounded-lg hover:border-silver transition-all">
+								<div class="badge">{ string(child.AgencyName[0]) }</div>
+								<div class="min-w-0">
+									<div class="text-sm font-medium text-private truncate">{ child.AgencyName }</div>
+									if child.ShortName.Valid && child.ShortName.String != "" {
+										<div class="text-xs text-silver">({ child.ShortName.String })</div>
+									}
+									<div class="text-xs text-rainy mt-1">{ formatNumber(child.TotalWordCount) } words</div>
+								</div>
+							</a>
+						}
+					</div>
+				</div>
+			}
+
+			<!-- Historical Snapshots -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">Historical Snapshots</h2>
+				if len(snapshots) > 1 {
+					<div class="overflow-x-auto">
+						<table class="min-w-full">
+							<thead>
+								<tr class="border-b border-plaster">
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Snapshot Date</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Word Count</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Regulation Count</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Change</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-plaster">
+								for i, snap := range snapshots {
+									<tr class="row-hover">
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-private">
+											{ snap.SnapshotDate.Format("Jan 2, 2006") }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-private">
+											{ formatNumber(snap.TotalWordCount) }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-private">
+											{ fmt.Sprintf("%d", snap.RegulationCount) }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap">
+											if i < len(snapshots)-1 {
+												@wordCountDiff(snap.TotalWordCount, snapshots[i+1].TotalWordCount)
+											} else {
+												<span class="text-xs text-rainy">Initial</span>
+											}
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				} else {
+					<p class="text-sm text-rainy">No historical data available. Only the current snapshot exists.</p>
+				}
+			</div>
+		</div>
+	}
+}

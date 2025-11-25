@@ -1,0 +1,143 @@
+package templates
+
+import (
+	"fmt"
+	"time"
+	"github.com/jjenkins/usds/internal/templates/layouts"
+)
+
+templ History(snapshotDates []time.Time, totalTitles, totalWords, totalAgencies int) {
+	@layouts.Base("History") {
+		<div class="space-y-6">
+			<!-- Page Header -->
+			<div>
+				<h1 class="text-2xl font-semibold text-aswad">Historical Data</h1>
+				<p class="mt-1 text-sm text-rainy">Track regulatory changes over time</p>
+			</div>
+
+			<!-- Current Summary -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">Current State</h2>
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div class="p-4 bg-plaster rounded-lg">
+						<div class="metric-label">Total Titles</div>
+						<div class="metric-value mt-2">{ fmt.Sprintf("%d", totalTitles) }</div>
+					</div>
+					<div class="p-4 bg-plaster rounded-lg">
+						<div class="metric-label">Total Words</div>
+						<div class="metric-value mt-2">{ formatNumber(totalWords) }</div>
+					</div>
+					<div class="p-4 bg-plaster rounded-lg">
+						<div class="metric-label">Total Agencies</div>
+						<div class="metric-value mt-2">{ fmt.Sprintf("%d", totalAgencies) }</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Snapshot Timeline -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">Snapshot Timeline</h2>
+				if len(snapshotDates) > 1 {
+					<div class="relative">
+						<!-- Timeline line -->
+						<div class="absolute left-3 top-0 bottom-0 w-px bg-plaster"></div>
+
+						<div class="space-y-4">
+							for i, date := range snapshotDates {
+								<div class="relative pl-10">
+									<!-- Timeline dot -->
+									if i == 0 {
+										<div class="absolute left-1.5 w-4 h-4 bg-aswad rounded-full border-2 border-white"></div>
+									} else {
+										<div class="absolute left-2 w-3 h-3 bg-silver rounded-full border-2 border-white"></div>
+									}
+
+									<div class={ "p-4 rounded-lg border", templ.KV("bg-aswad border-aswad", i == 0), templ.KV("bg-white border-plaster", i != 0) }>
+										<div class="flex justify-between items-center">
+											<div>
+												if i == 0 {
+													<div class="font-medium text-white">{ date.Format("January 2, 2006") }</div>
+													<div class="text-sm text-white/70 mt-1">Most Recent</div>
+												} else {
+													<div class="font-medium text-private">{ date.Format("January 2, 2006") }</div>
+												}
+											</div>
+											if i == 0 {
+												<span class="px-2 py-1 bg-white/20 rounded text-xs font-medium text-white">
+													Current
+												</span>
+											}
+										</div>
+									</div>
+								</div>
+							}
+						</div>
+					</div>
+
+					<div class="mt-6 p-4 bg-plaster rounded-lg">
+						<div class="flex items-start gap-3">
+							<svg class="w-5 h-5 text-rainy mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+							<p class="text-sm text-private">{ fmt.Sprintf("%d snapshots recorded. ", len(snapshotDates)) }View individual <a href="/titles" class="text-private hover:text-aswad underline">title</a> or <a href="/agencies" class="text-private hover:text-aswad underline">agency</a> pages for detailed change history.</p>
+						</div>
+					</div>
+				} else {
+					<div class="text-center py-12">
+						<div class="w-14 h-14 bg-plaster rounded-full flex items-center justify-center mx-auto mb-4">
+							<svg class="w-7 h-7 text-rainy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+						</div>
+						<h3 class="text-base font-medium text-aswad">No historical data yet</h3>
+						<p class="mt-2 text-sm text-rainy max-w-md mx-auto">Historical data will appear here after multiple imports have been run on different dates.</p>
+						<p class="mt-4 text-sm text-rainy">
+							Run <code class="bg-plaster px-2 py-1 rounded text-xs font-mono">./usds import</code> periodically to track regulatory changes.
+						</p>
+					</div>
+				}
+			</div>
+
+			<!-- How It Works -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">How Change Tracking Works</h2>
+				<div class="space-y-3">
+					<div class="flex items-start gap-3">
+						<div class="w-5 h-5 bg-plaster rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+							<svg class="w-3 h-3 text-private" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+							</svg>
+						</div>
+						<p class="text-sm text-private">Each import creates a snapshot with the current date</p>
+					</div>
+					<div class="flex items-start gap-3">
+						<div class="w-5 h-5 bg-plaster rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+							<svg class="w-3 h-3 text-private" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+							</svg>
+						</div>
+						<p class="text-sm text-private">Snapshots are only saved when content actually changes (detected via checksum)</p>
+					</div>
+					<div class="flex items-start gap-3">
+						<div class="w-5 h-5 bg-plaster rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+							<svg class="w-3 h-3 text-private" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+							</svg>
+						</div>
+						<p class="text-sm text-private">Word count changes are tracked to identify regulatory growth or reduction</p>
+					</div>
+					<div class="flex items-start gap-3">
+						<div class="w-5 h-5 bg-plaster rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+							<svg class="w-3 h-3 text-private" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+							</svg>
+						</div>
+						<p class="text-sm text-private">
+							Use <code class="bg-plaster px-2 py-0.5 rounded text-xs font-mono">./usds import --date YYYY-MM-DD</code> to import historical data
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,165 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/jjenkins/usds/internal/model"
+	"github.com/jjenkins/usds/internal/templates/layouts"
+)
+
+templ TitleDetail(title *model.Title, snapshots []model.TitleSnapshot, agencies []model.Agency, densityScore float64) {
+	@layouts.Base(fmt.Sprintf("Title %d - %s", title.TitleNumber, title.TitleName)) {
+		<div class="space-y-6">
+			<!-- Breadcrumb -->
+			<nav class="text-sm">
+				<a href="/titles" class="text-rainy hover:text-private">Titles</a>
+				<span class="text-silver mx-2">/</span>
+				<span class="text-private">Title { fmt.Sprintf("%d", title.TitleNumber) }</span>
+			</nav>
+
+			<!-- Title Header -->
+			<div class="card p-6">
+				<div class="flex items-start justify-between">
+					<div class="flex items-start gap-4">
+						<div class="badge text-lg w-12 h-12">{ fmt.Sprintf("%d", title.TitleNumber) }</div>
+						<div>
+							<h1 class="text-xl font-semibold text-aswad">{ title.TitleName }</h1>
+							<p class="mt-1 text-sm text-rainy">Code of Federal Regulations</p>
+						</div>
+					</div>
+					if title.LastAmendedDate.Valid {
+						<div class="text-right">
+							<div class="metric-label">Last Amended</div>
+							<div class="text-base font-medium text-private mt-1">{ title.LastAmendedDate.Time.Format("Jan 2, 2006") }</div>
+						</div>
+					}
+				</div>
+			</div>
+
+			<!-- Metrics Grid -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+				<div class="card p-5">
+					<div class="metric-label">Word Count</div>
+					<div class="metric-value mt-2">{ formatNumber(title.WordCount) }</div>
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Section Count</div>
+					<div class="metric-value mt-2">{ fmt.Sprintf("%d", title.SectionCount) }</div>
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Density Score</div>
+					if title.SectionCount > 0 {
+						<div class="metric-value mt-2">{ fmt.Sprintf("%.2f", densityScore) }</div>
+						<div class="w-full h-2 bg-plaster rounded-full overflow-hidden mt-2">
+							<div class="h-full bg-private rounded-full" style={ fmt.Sprintf("width: %.0f%%", densityScore*100) }></div>
+						</div>
+						<div class="text-xs text-rainy mt-1">{ fmt.Sprintf("%.1f", float64(title.WordCount)/float64(title.SectionCount)) } words/section</div>
+					} else {
+						<div class="metric-value mt-2 text-silver">--</div>
+					}
+				</div>
+				<div class="card p-5">
+					<div class="metric-label">Checksum</div>
+					<div class="text-sm font-mono text-private mt-2 truncate" title={ title.Checksum }>
+						{ truncateChecksum(title.Checksum) }
+					</div>
+				</div>
+			</div>
+
+			<!-- Linked Agencies -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">Linked Agencies</h2>
+				if len(agencies) > 0 {
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+						for _, agency := range agencies {
+							<a href={ templ.SafeURL(fmt.Sprintf("/agencies/%s", agency.Slug)) } class="flex items-center gap-3 p-3 border border-plaster rounded-lg hover:border-silver transition-all">
+								<div class="badge">{ string(agency.AgencyName[0]) }</div>
+								<div class="min-w-0">
+									<div class="text-sm font-medium text-private truncate">{ agency.AgencyName }</div>
+									<div class="text-xs text-rainy">{ formatNumber(agency.TotalWordCount) } words</div>
+								</div>
+							</a>
+						}
+					</div>
+				} else {
+					<p class="text-sm text-rainy">No agencies linked to this title.</p>
+				}
+			</div>
+
+			<!-- Historical Snapshots -->
+			<div class="card p-6">
+				<h2 class="text-base font-semibold text-aswad mb-4">Historical Snapshots</h2>
+				if len(snapshots) > 1 {
+					<div class="overflow-x-auto">
+						<table class="min-w-full">
+							<thead>
+								<tr class="border-b border-plaster">
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Snapshot Date</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Word Count</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Section Count</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-rainy">Change</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-plaster">
+								for i, snap := range snapshots {
+									<tr class="row-hover">
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-private">
+											{ snap.SnapshotDate.Format("Jan 2, 2006") }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-private">
+											{ formatNumberWithCommas(snap.WordCount) }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-private">
+											{ formatNumberWithCommas(snap.SectionCount) }
+										</td>
+										<td class="px-4 py-3 whitespace-nowrap">
+											if i < len(snapshots)-1 {
+												@wordCountDiff(snap.WordCount, snapshots[i+1].WordCount)
+											} else {
+												<span class="text-xs text-rainy">Initial</span>
+											}
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				} else {
+					<p class="text-sm text-rainy">No historical data available. Only the current snapshot exists.</p>
+				}
+			</div>
+		</div>
+	}
+}
+
+func truncateChecksum(checksum string) string {
+	if len(checksum) > 12 {
+		return checksum[:12] + "..."
+	}
+	return checksum
+}
+
+func formatNumberWithCommas(n int) string {
+	str := fmt.Sprintf("%d", n)
+	if len(str) <= 3 {
+		return str
+	}
+
+	var result []byte
+	for i, c := range str {
+		if i > 0 && (len(str)-i)%3 == 0 {
+			result = append(result, ',')
+		}
+		result = append(result, byte(c))
+	}
+	return string(result)
+}
+
+templ wordCountDiff(current, previous int) {
+	if current > previous {
+		<span class="text-sm text-red-600">+{ formatNumber(current - previous) }</span>
+	} else if current < previous {
+		<span class="text-sm text-emerald-600">-{ formatNumber(previous - current) }</span>
+	} else {
+		<span class="text-xs text-rainy">No change</span>
+	}
+}

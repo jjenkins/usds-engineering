@@ -1,0 +1,140 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/jjenkins/usds/internal/store"
+	"github.com/jjenkins/usds/internal/templates/layouts"
+)
+
+templ Titles(titles []store.TitleWithDensity, sortBy, order string) {
+	@layouts.Base("CFR Titles") {
+		<div class="space-y-6">
+			<!-- Page Header -->
+			<div class="flex justify-between items-center">
+				<div>
+					<h1 class="text-2xl font-semibold text-aswad">CFR Titles</h1>
+					<p class="mt-1 text-sm text-rainy">All { fmt.Sprintf("%d", len(titles)) } Code of Federal Regulations titles</p>
+				</div>
+				<div class="text-right">
+					<div class="metric-label">Total Records</div>
+					<div class="text-2xl font-semibold text-aswad">{ fmt.Sprintf("%d", len(titles)) }</div>
+				</div>
+			</div>
+
+			<!-- Table -->
+			<div class="card overflow-hidden">
+				<div id="titles-table">
+					@TitlesTable(titles, sortBy, order)
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ TitlesTable(titles []store.TitleWithDensity, sortBy, order string) {
+	<table class="min-w-full">
+		<thead>
+			<tr class="border-b border-plaster">
+				@sortableHeader("No.", "number", sortBy, order)
+				@sortableHeader("Title Name", "name", sortBy, order)
+				@sortableHeader("Word Count", "word_count", sortBy, order)
+				@sortableHeader("Sections", "section_count", sortBy, order)
+				<th class="px-6 py-3 text-left">
+					<span class="text-xs font-medium uppercase tracking-wider text-rainy">Density</span>
+				</th>
+				@sortableHeader("Last Amended", "last_amended", sortBy, order)
+			</tr>
+		</thead>
+		<tbody class="divide-y divide-plaster">
+			@TitlesTableRows(titles)
+		</tbody>
+	</table>
+}
+
+templ TitlesTableBody(titles []store.TitleWithDensity, sortBy, order string) {
+	@TitlesTable(titles, sortBy, order)
+}
+
+templ TitlesTableRows(titles []store.TitleWithDensity) {
+	for _, title := range titles {
+		<tr class="row-hover">
+			<td class="px-6 py-4 whitespace-nowrap">
+				<div class="badge">{ fmt.Sprintf("%d", title.TitleNumber) }</div>
+			</td>
+			<td class="px-6 py-4">
+				<a href={ templ.SafeURL(fmt.Sprintf("/titles/%d", title.TitleNumber)) } class="text-sm font-medium text-private hover:text-aswad">
+					{ title.TitleName }
+				</a>
+			</td>
+			<td class="px-6 py-4 whitespace-nowrap text-sm text-private">
+				{ formatNumber(title.WordCount) }
+			</td>
+			<td class="px-6 py-4 whitespace-nowrap text-sm text-private">
+				{ fmt.Sprintf("%d", title.SectionCount) }
+			</td>
+			<td class="px-6 py-4 whitespace-nowrap">
+				if title.SectionCount > 0 {
+					<div class="flex items-center gap-2">
+						<div class="w-16 h-2 bg-plaster rounded-full overflow-hidden">
+							<div class="h-full bg-private rounded-full" style={ fmt.Sprintf("width: %.0f%%", title.DensityScore*100) }></div>
+						</div>
+						<span class="text-sm text-rainy">{ fmt.Sprintf("%.2f", title.DensityScore) }</span>
+					</div>
+				} else {
+					<span class="text-silver text-sm">--</span>
+				}
+			</td>
+			<td class="px-6 py-4 whitespace-nowrap text-sm text-rainy">
+				if title.LastAmendedDate.Valid {
+					{ title.LastAmendedDate.Time.Format("Jan 2, 2006") }
+				} else {
+					<span class="text-silver">--</span>
+				}
+			</td>
+		</tr>
+	}
+}
+
+templ sortableHeader(label, column, currentSort, currentOrder string) {
+	<th class="px-6 py-3 text-left">
+		if currentSort == column {
+			if currentOrder == "asc" {
+				<a
+					href={ templ.SafeURL(fmt.Sprintf("/titles?sort=%s&order=desc", column)) }
+					hx-get={ fmt.Sprintf("/titles?sort=%s&order=desc", column) }
+					hx-target="#titles-table"
+					hx-swap="innerHTML"
+					class="flex items-center gap-2 cursor-pointer group"
+				>
+					<span class="text-xs font-medium uppercase tracking-wider text-aswad">{ label }</span>
+					<svg class="w-3 h-3 text-private" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+					</svg>
+				</a>
+			} else {
+				<a
+					href={ templ.SafeURL(fmt.Sprintf("/titles?sort=%s&order=asc", column)) }
+					hx-get={ fmt.Sprintf("/titles?sort=%s&order=asc", column) }
+					hx-target="#titles-table"
+					hx-swap="innerHTML"
+					class="flex items-center gap-2 cursor-pointer group"
+				>
+					<span class="text-xs font-medium uppercase tracking-wider text-aswad">{ label }</span>
+					<svg class="w-3 h-3 text-private" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+					</svg>
+				</a>
+			}
+		} else {
+			<a
+				href={ templ.SafeURL(fmt.Sprintf("/titles?sort=%s&order=asc", column)) }
+				hx-get={ fmt.Sprintf("/titles?sort=%s&order=asc", column) }
+				hx-target="#titles-table"
+				hx-swap="innerHTML"
+				class="cursor-pointer group"
+			>
+				<span class="text-xs font-medium uppercase tracking-wider text-rainy group-hover:text-private">{ label }</span>
+			</a>
+		}
+	</th>
+}
