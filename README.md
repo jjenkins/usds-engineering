@@ -28,3 +28,7 @@ The goal of this assessment is to create a simple website to analyze Federal Reg
 Thank you and we look forward to reviewing your submission.
 
 NOTES: API documentation: https://www.ecfr.gov/developers/documentation/api/v1
+
+## Feedback
+
+Clear objective, realistic scope, allowed me to demonstrate full stack skills with a real API and meaningful data. The main challenge was with the eCFR API reliability when fetching historical data. Many requests timed out (504 errors), running a full historical import took to long complete.
